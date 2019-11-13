@@ -13,6 +13,9 @@ Future intentions when/if I get the time for busywork practice code:
  
 ## Intent In Writing
 I'm new to Python, and am generally just trying to learn to code in a professional way. I've been "learning" Python for over a year, but mostly at a pace of 1 week on, 4 months off. I consider my "I'm ready to actually practice Python" date as being September 18th, 2019 - this was when I finished the non-project portions of "Python Crash Course" by Eric Matthes, and can actually claim I had the functional basics of the language down.
+
 Here I'm defining "professional" as scalable, lean functions, a relatively clean flow of code for readers and keeping it pythonic.
+
 The main challenges for myself here was making everything scalable. From board construction to win condition checking. The main thing I personally needed to avoid was massive if/elif/else tables checking every possible position on the board.
+
 It was not my intent to focus on the CX aspect of the code writing, as that's not something I can apply much to my current or short-term intended jobs. If I do find myself coming back to this for further changes, I may implement a numbering system to make user input easier, but only because that is a functionality challenge.
