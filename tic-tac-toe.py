@@ -16,10 +16,10 @@ import re
 
 def get_board_size():
     while True:
-        size = input("What size board do you want (3-101)?\n-$ ")
+        size_raw = input("What size board do you want (3-9)?\n-$ ")
         try:
-            size_int = int(size)
-            if size_int > 2 and size_int < 102:
+            size_int = int(size_raw)
+            if size_int > 2 and size_int < 10:
                 return size_int
             else:
                 print("Sorry, you entered a size we can't accept. Try again...")
@@ -29,121 +29,112 @@ def get_board_size():
             continue
 
 
-def make_board_header(size):
-    board_out = "   | "
-    for i in range(1, size + 1):
-        board_out += str(i) + " | "
-
-    board_out = board_out.rstrip()
-    board_out += "\n"
-
-    return board_out
-
-
-def make_filler(header):
-    filler = ''
-    for _ in range(0,len(header)):
-        filler += '-'
+def make_filler():
+    filler = '-'
+    for _ in range(0, size):
+        filler += '--------'
 
     return filler
 
 
-def gen_board(size,board):
-    board_out = make_board_header(size)
-    filler = make_filler(board_out)
-    line_filled = ""
-    for index,line in enumerate(board, start=1):
-        for item in line:
-            line_filled += item
-        board_out += " " + str(index) + " | " + " | ".join(line_filled) + " |\n"
+def gen_board():
+    filler = make_filler()
+    board_out = filler + "\n"
+    line_filled = []
+    cell_number = 0
+    for r_index,row in enumerate(board):
+        for c_index,_ in enumerate(row): # Yikes from here forward :/
+            try:
+                cell_number = cell_number + 1
+            except TypeError:
+                cell_number = int(cell_number.strip('( )')) + 1
+            if cell_number >= 1 and cell_number <= 9:
+                cell_number = " (" + str(cell_number) + ") "
+            else:
+                cell_number = "(" + str(cell_number) + ") "
+
+            if board[r_index][c_index] == ' ':
+                line_filled.append(str(cell_number))
+            else:
+                line_filled.append(board[r_index][c_index])
+            cell_dict[str(cell_number).strip('( )')] = [r_index, c_index]
+
+        board_out += "| " + " | ".join(line_filled) + " |\n"
         board_out += filler + "\n"
-        line_filled = ""
+        line_filled = []
 
     return board_out
 
 
-def make_board_array(size: int):
+def make_board_array():
     board = []
-    for i in range(1, size + 1):
+    for i in range(0, size):
         board.append(i)
-        board[i - 1] = []
+        board[i] = []
 
-        for j in range(1, size + 1):
-            board[i - 1].append(' ')
+        for j in range(0, size):
+            board[i].append(' ')
 
     return board
 
 
-def make_play(player: str,board, size):
+def make_play(player: str,):
     if player == 1:
-        player_mark = 'O'
+        player_mark = '  O  '
         player_name = 'Player 1'
     elif player == 2:
-        player_mark = 'X'
+        player_mark = '  X  '
         player_name = 'Player 2'
     while True:
-        coords = validate_coordinates(size,player_name)
-        if board[coords[1] - 1][coords[0] - 1] == ' ':
-            board[coords[1] - 1][coords[0] - 1] = player_mark
+        coords = validate_coordinates(player_name)
+        if board[coords[0]][coords[1]] == ' ':
+            board[coords[0]][coords[1]] = player_mark
         else:
             print("Sorry... that's taken...")
             continue
         break
 
-    find_winner(board,coords,player_mark)
+    find_winner(coords,player_mark)
 
     return board
 
 
-def validate_coordinates(size,player_name):
+def validate_coordinates(player_name):
     while True:
-        valid = False
-        play = input(player_name + ", enter your coordinates (column,row): ")
-        if re.match(r'\d*\.\d+', play):
-            print("Sorry, we don't accept float numbers here... Try again!")
+        play = input(player_name + ", enter your cell: ")
+        play = play.strip('()')
+        if play not in cell_dict:
+            print("Sorry, that's not a valid play! Try again.")
             continue
-        elif re.match(r'^\d+,\d+$', play):
-            coords = play.split(',')
-            coords = [int(i) for i in coords]
-            for i in coords:
-                if i > 0 and i <= size:
-                    valid = True
-                else:
-                    valid = False
-                    print("Sorry, your coordinates are out of range...")
-                    break
-            if valid:
-                return coords
-            continue
-        else:
-            print("Sorry, you didn't enter valid coordinates...")
-            continue
+        elif play in cell_dict:
+            coords = cell_dict[play]
+            return coords
 
 
-def find_winner(board,coords,player_mark):
-    x, y = coords
-    x, y = x - 1, y - 1
-    i = player_mark
+def find_winner(coords,player_mark):
+    row, column = coords
+    mark = player_mark
     win_condition = False
     conditions=[
-        check_vertical,
-        check_horizontal,
+        check_column,
+        check_row,
         check_diagonal,
         check_diagonal_up,
         ]
 
     for condition in conditions:
-        win_condition = condition(board[:],x,y,i)
+        win_condition = condition(board[:], row, column, mark)
         if win_condition:
-            print("Congrats! The " + i + "'s win!")
+            print(gen_board())
+            print("Congrats! The " + mark.strip() + "'s win!")
             exit()
 
-    if check_draw(board):
+    if check_draw():
         print("It's a draw! Congrats on wasting your time!")
         exit()
 
 
-def check_draw(board):
+def check_draw():
     draw = False
     for line in board:
         for item in line:
@@ -154,66 +145,62 @@ def check_draw(board):
     return draw
 
 
-def check_vertical(board,x,y,i):
+def check_column(tmp_board, row, column, i):
     streak = 0
     condition = False
-    for index,_ in enumerate(board):
+    for index,_ in enumerate(tmp_board):
         if streak == win_condition:
             return True
         else:
-            if board[index][x] != i:
+            if tmp_board[index][column] != i:
                 streak = 0
                 continue
-            elif board[index][x] == i:
+            elif tmp_board[index][column] == i:
                 streak += 1
-            else:
-                streak = 0
+                if streak == win_condition:
+                    return True
                 continue
 
     return condition
 
 
-def check_horizontal(board,x,y,i):
+def check_row(tmp_board, row, column, i):
     streak = 0
     condition = False
-    for item in board[y]:
-        if streak == win_condition:
-            return True
-        else:
-            if item != i:
-                streak = 0
-                continue
-            elif item == i:
-                streak += 1
-            else:
-                streak = 0
-                continue
+    for item in tmp_board[row]:
+        if item != i:
+            streak = 0
+            continue
+        elif item == i:
+            streak += 1
+            if streak == win_condition:
+                return True
+            continue
 
     return condition
 
 
-def check_diagonal(board,x,y,i):
+def check_diagonal(tmp_board,row,column,i):
     streak = 0
     condition = False
-    for index,_ in enumerate(board):
-        if streak == win_condition:
-            return True
+    for index,_ in enumerate(tmp_board):
+        if tmp_board[index][index] != i:
+            streak = 0
+            continue
+        elif tmp_board[index][index] == i:
+            streak += 1
+            if streak == win_condition:
+                return True
         else:
-            if board[index][index] != i:
-                streak = 0
-                continue
-            elif board[index][index] == i:
-                streak += 1
-            else:
-                streak = 0
-                continue
+            streak = 0
+            continue
 
     return condition
 
 
-def check_diagonal_up(board,x,y,i):
-    board.reverse()
-    condition = check_diagonal(board,x,y,i)
+def check_diagonal_up(tmp_board,x,y,i):
+    tmp_board.reverse()
+    condition = check_diagonal(tmp_board,x,y,i)
 
     return condition
 
@@ -228,16 +215,20 @@ def define_win_condition(size):
 
 if __name__ == "__main__":
     global win_condition
+    global cell_dict
+    global size
+    global board
+    cell_dict = {}
     p1 = 1
     p2 = 2
     size = get_board_size()
     win_condition = define_win_condition(size)
-    board = make_board_array(size)
-    print(gen_board(size,board))
+    board = make_board_array()
+    print(gen_board())
 
     while True:
-        make_play(p1,board,size)
-        print(gen_board(size, board))
-        make_play(p2, board,size)
-        print(gen_board(size, board))
+        make_play(p1)
+        print(gen_board())
+        make_play(p2)
+        print(gen_board())
         continue
