@@ -12,8 +12,6 @@ dirty rows/columns (victory cannot be achieved, end game early)
     And if that's empty, I say "no winning condition remains"
 """
 
-import re
-
 def get_board_size():
     while True:
         size_raw = input("What size board do you want (3-9)?\n-$ ")
@@ -34,12 +32,14 @@ def make_filler():
     for _ in range(0, size):
         filler += '--------'
 
+    filler += "\n"
+
     return filler
 
 
 def gen_board():
     filler = make_filler()
-    board_out = filler + "\n"
+    board_out = filler
     line_filled = []
     cell_number = 0
     for r_index,row in enumerate(board):
@@ -60,7 +60,7 @@ def gen_board():
             cell_dict[str(cell_number).strip('( )')] = [r_index, c_index]
 
         board_out += "| " + " | ".join(line_filled) + " |\n"
-        board_out += filler + "\n"
+        board_out += filler
         line_filled = []
 
     return board_out
@@ -118,9 +118,20 @@ def find_winner(coords,player_mark):
     conditions=[
         check_column,
         check_row,
-        check_diagonal,
-        check_diagonal_up,
         ]
+
+    if size > 3: ## Saving some iops if it's a small board
+        conditions.extend([
+            check_all_diagonals_1,
+            check_all_diagonals_2,
+            check_all_diagonals_3,
+            check_all_diagonals_4,
+        ])
+    else:
+        conditions.extend([
+            check_diagonal,
+            check_diagonal_up,
+        ])
 
     for condition in conditions:
         win_condition = condition(board[:], row, column, mark)
@@ -145,17 +156,17 @@ def check_draw():
     return draw
 
 
-def check_column(tmp_board, row, column, i):
+def check_column(tmp_board, row, column, mark):
     streak = 0
     condition = False
     for index,_ in enumerate(tmp_board):
         if streak == win_condition:
             return True
         else:
-            if tmp_board[index][column] != i:
+            if tmp_board[index][column] != mark:
                 streak = 0
                 continue
-            elif tmp_board[index][column] == i:
+            elif tmp_board[index][column] == mark:
                 streak += 1
                 if streak == win_condition:
                     return True
@@ -164,14 +175,14 @@ def check_column(tmp_board, row, column, i):
     return condition
 
 
-def check_row(tmp_board, row, column, i):
+def check_row(tmp_board, row, column, mark):
     streak = 0
     condition = False
     for item in tmp_board[row]:
-        if item != i:
+        if item != mark:
             streak = 0
             continue
-        elif item == i:
+        elif item == mark:
             streak += 1
             if streak == win_condition:
                 return True
@@ -180,14 +191,15 @@ def check_row(tmp_board, row, column, i):
     return condition
 
 
-def check_diagonal(tmp_board,row,column,i):
+def check_diagonal(tmp_board,row,column,mark):
     streak = 0
     condition = False
+    # Index here is row, but naming it index because it's serving as more
     for index,_ in enumerate(tmp_board):
-        if tmp_board[index][index] != i:
+        if tmp_board[index][index] != mark:
             streak = 0
             continue
-        elif tmp_board[index][index] == i:
+        elif tmp_board[index][index] == mark:
             streak += 1
             if streak == win_condition:
                 return True
@@ -198,9 +210,66 @@ def check_diagonal(tmp_board,row,column,i):
     return condition
 
 
-def check_diagonal_up(tmp_board,x,y,i):
+def check_diagonal_up(tmp_board,row,column,mark):
     tmp_board.reverse()
-    condition = check_diagonal(tmp_board,x,y,i)
+    condition = check_diagonal(tmp_board,row,column,mark)
+
+    return condition
+
+
+def check_all_diagonals_1(tmp_board,row,column,mark):
+    """
+    Top right to bottom left.
+    Listen... This is where the "scalable" idea gets out of hand...
+    In a board of 8x8, the win condition is 4.
+    That means there's a LOT of diagonals. This will check them all.
+    Well... this and the other versions of it (2-4).
+    This will check from the win condition to the end of the first column.
+    """
+    streak = 0
+    condition = False
+    # We aren't using last play for this condition check. Brute Forcing FTW
+    column = win_condition - 1 # First diagonal is win condition, starting at 0
+    rev_column = column
+    while column <= size and rev_column >= 0:
+        for row in tmp_board:
+            if rev_column < 0: break
+            if row[rev_column] != mark:
+                streak = 0
+                rev_column -= 1
+                continue
+            elif row[rev_column] == mark:
+                streak += 1
+                if streak == win_condition:
+                    return True
+                rev_column -= 1
+                continue
+        rev_column = column
+        column += 1
+
+    return condition
+
+
+def check_all_diagonals_2(tmp_board,row,column,mark):
+    tmp_board.reverse()
+    condition = check_all_diagonals_1(tmp_board, row, column, mark)
+
+    return condition
+
+
+def check_all_diagonals_3(tmp_board,row,column,mark):
+    for row in tmp_board:
+        row = row.reverse()
+    condition = check_all_diagonals_1(tmp_board, row, column, mark)
+
+    return condition
+
+
+def check_all_diagonals_4(tmp_board,row,column,mark):
+    for row in tmp_board:
+        row = row.reverse()
+    tmp_board.reverse()
+    condition = check_all_diagonals_1(tmp_board, row, column, mark)
 
     return condition
 
@@ -224,6 +293,7 @@ if __name__ == "__main__":
     size = get_board_size()
     win_condition = define_win_condition(size)
     board = make_board_array()
+    print(f'The win condition is {str(win_condition)} marks in a row!')
     print(gen_board())
 
     while True:
