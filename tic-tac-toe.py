@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-TODO:
-dirty rows/columns (victory cannot be achieved, end game early)
-    Going to need to do this once per victory condition
-    Most likely easiest to base off of victory condition function.
-    Not super easy...
-    Have to make sure it doesn't exit if one victory condition can't be met
-    but other still can...
-    I think if a victory condition can't be met, I remove it from conditions[]
-    And if that's empty, I say "no winning condition remains"
-"""
 
 def get_board_size():
     while True:
@@ -111,34 +100,32 @@ def validate_coordinates(player_name):
             return coords
 
 
-def find_winner(coords,player_mark):
+def find_winner(coords,mark):
     row, column = coords
-    mark = player_mark
-    win_condition = False
-    conditions=[
+    winner = False
+
+    check_list = [
         check_column,
         check_row,
-        ]
+        check_all_diagonals_1,
+        check_all_diagonals_2,
+    ]
 
-    if size > 3: ## Saving some iops if it's a small board
-        conditions.extend([
-            check_all_diagonals_1,
-            check_all_diagonals_2,
-            check_all_diagonals_3,
-            check_all_diagonals_4,
-        ])
-    else:
-        conditions.extend([
-            check_diagonal,
-            check_diagonal_up,
+    if size > 3:
+        check_list.extend([
+        check_all_diagonals_3,
+        check_all_diagonals_4,
         ])
 
-    for condition in conditions:
-        win_condition = condition(board[:], row, column, mark)
-        if win_condition:
-            print(gen_board())
-            print("Congrats! The " + mark.strip() + "'s win!")
-            exit()
+    for check in check_list:
+        winner = check(board[:], mark, row, column)
+        if winner:
+            break
+
+    if winner:
+        print(gen_board())
+        print("Congrats! The " + mark.strip() + "'s win!")
+        exit()
 
     if check_draw():
         print("It's a draw! Congrats on wasting your time!")
@@ -156,7 +143,8 @@ def check_draw():
     return draw
 
 
-def check_column(tmp_board, row, column, mark):
+def check_column(tmp_board, mark, *coords):
+    _, column = coords
     streak = 0
     condition = False
     for index,_ in enumerate(tmp_board):
@@ -175,7 +163,8 @@ def check_column(tmp_board, row, column, mark):
     return condition
 
 
-def check_row(tmp_board, row, column, mark):
+def check_row(tmp_board, mark, *coords):
+    row, _ = coords
     streak = 0
     condition = False
     for item in tmp_board[row]:
@@ -191,49 +180,32 @@ def check_row(tmp_board, row, column, mark):
     return condition
 
 
-def check_diagonal(tmp_board,row,column,mark):
-    streak = 0
-    condition = False
-    # Index here is row, but naming it index because it's serving as more
-    for index,_ in enumerate(tmp_board):
-        if tmp_board[index][index] != mark:
-            streak = 0
-            continue
-        elif tmp_board[index][index] == mark:
-            streak += 1
-            if streak == win_condition:
-                return True
-        else:
-            streak = 0
-            continue
-
-    return condition
-
-
-def check_diagonal_up(tmp_board,row,column,mark):
-    tmp_board.reverse()
-    condition = check_diagonal(tmp_board,row,column,mark)
-
-    return condition
-
-
-def check_all_diagonals_1(tmp_board,row,column,mark):
+def check_all_diagonals_1(tmp_board, mark, *coords):
     """
-    Top right to bottom left.
-    Listen... This is where the "scalable" idea gets out of hand...
-    In a board of 8x8, the win condition is 4.
-    That means there's a LOT of diagonals. This will check them all.
-    Well... this and the other versions of it (2-4).
-    This will check from the win condition to the end of the first column.
+        This is a sample 4x4 with a win condition of 3.
+        It starts at the cell equal to the win condition within it's row.
+        It checks the down-left diagonal from that cell.
+        It then moves until the corner within that row (>) doing the same.
+                            v   # Starting here, on 3, then moving right (>).
+        ---------------------------------
+        |  (1)  |  (2)  |   X   |   X   |
+        ---------------------------------
+        |  (5)  |   X   |   X   |  (8)  |
+        ---------------------------------
+        |   X   |   X   | (11)  | (12)  |
+        ---------------------------------
+        |   X   | (14)  | (15)  | (16)  |
+        ---------------------------------
     """
     streak = 0
     condition = False
     # We aren't using last play for this condition check. Brute Forcing FTW
     column = win_condition - 1 # First diagonal is win condition, starting at 0
     rev_column = column
-    while column <= size and rev_column >= 0:
+    while column < size and rev_column >= 0:
         for row in tmp_board:
-            if rev_column < 0: break
+            if rev_column < 0:
+                break
             if row[rev_column] != mark:
                 streak = 0
                 rev_column -= 1
@@ -250,26 +222,74 @@ def check_all_diagonals_1(tmp_board,row,column,mark):
     return condition
 
 
-def check_all_diagonals_2(tmp_board,row,column,mark):
+def check_all_diagonals_2(tmp_board, mark, *coords):
+    """
+        This is a sample 4x4 with a win condition of 3.
+        It starts at the cell equal to the win condition within it's row.
+        It checks the up-left diagonal from that cell.
+        It then moves until the corner within that row (>) doing the same.
+        ---------------------------------
+        |   X   |  (2)  |  (3)  |  (4)  |
+        ---------------------------------
+        |   X   |   X   |  (7)  |  (8)  |
+        ---------------------------------
+        |  (9)  |   X   |   X   | (12)  |
+        ---------------------------------
+        | (13)  | (14)  |   X   |   X   |
+        ---------------------------------
+                            ^   # Starting here, on 15, then moving right (>).
+    """
     tmp_board.reverse()
-    condition = check_all_diagonals_1(tmp_board, row, column, mark)
+    condition = check_all_diagonals_1(tmp_board, mark, coords)
 
     return condition
 
 
-def check_all_diagonals_3(tmp_board,row,column,mark):
+def check_all_diagonals_3(tmp_board, mark, *coords):
+    """
+        This is a sample 4x4 with a win condition of 3.
+        It starts at the cell equal to the win condition within it's row.
+        It checks the down-right diagonal from that cell.
+        It then moves until the corner within that row (<) doing the same.
+                    v   # Starting here, on 2, then moving left (<).
+        ---------------------------------
+        |   X   |   X   |  (3)  |  (4)  |
+        ---------------------------------
+        |  (5)  |   X   |   X   |  (8)  |
+        ---------------------------------
+        |  (9)  | (10)  |   X   |   X   |
+        ---------------------------------
+        | (13)  | (14)  | (15)  |   X   |
+        ---------------------------------
+    """
     for row in tmp_board:
-        row = row.reverse()
-    condition = check_all_diagonals_1(tmp_board, row, column, mark)
+        row.reverse()
+    condition = check_all_diagonals_1(tmp_board, mark, coords)
 
     return condition
 
 
-def check_all_diagonals_4(tmp_board,row,column,mark):
+def check_all_diagonals_4(tmp_board, mark, *coords):
+    """
+        This is a sample 4x4 with a win condition of 3.
+        It starts at the cell equal to the win condition within it's row.
+        It checks the up-right diagonal from that cell.
+        It then moves until the corner within that row (<) doing the same.
+        ---------------------------------
+        |  (1)  |  (2)  |  (3)  |   X   |
+        ---------------------------------
+        |  (5)  |  (6)  |   X   |   X   |
+        ---------------------------------
+        |  (9)  |   X   |   X   | (12)  |
+        ---------------------------------
+        |   X   |   X   | (15)  | (16)  |
+        ---------------------------------
+                    ^   # Starting here, on 14, then moving left (<).
+    """
     for row in tmp_board:
-        row = row.reverse()
+        row.reverse()
     tmp_board.reverse()
-    condition = check_all_diagonals_1(tmp_board, row, column, mark)
+    condition = check_all_diagonals_1(tmp_board, mark, coords)
 
     return condition
 
@@ -281,6 +301,7 @@ def define_win_condition(size):
         return int(size / 2) + 1
     else:
         return 3
+
 
 if __name__ == "__main__":
     global win_condition
