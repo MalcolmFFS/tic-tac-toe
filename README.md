@@ -18,4 +18,4 @@ Here I'm defining "professional" as scalable, lean functions, a relatively clean
 
 The main challenges for myself here was making everything scalable. From board construction to win condition checking. The main thing I personally needed to avoid was massive if/elif/else tables checking every possible position on the board.
 
-It was not my intent to focus on the CX aspect of the code writing, as that's not something I can apply much to my current or short-term intended jobs. If I do find myself coming back to this for further changes, I may implement a numbering system to make user input easier, but only because that is a functionality challenge.
+It was not my intent to focus on the CX aspect of the code writing, as that's not something I can apply much to my current or short-term intended jobs. I am using this as a programming logic challenge.
