@@ -7,6 +7,7 @@ The win condition is a minimal of 3 sequential marks for smaller board sizes. Fo
 This program is functional, but not full featured as far as what I believe to be in my skill range, or close but that could be a learning opportunity.
 
 Future intentions when/if I get the time for busywork practice code:
+ - OOP: sadge
  - Dirty Lanes: (I really don't look forward to doing this since implementing `check_all_diagonals_1()`) The game can go on for too long at larger board sizes, if I start checking that win conditions (lanes) are no longer achievable (dirty), once all are dirty, end the game early instead of waiting for the entire board to be filled to declare a draw.
  - Bot Player / Single-Player Mode: Once I have the concept of dirty lanes setup, it is a much smaller task to make a bot player so this can be a single-player game. The bot would not make plays in unwinnable lanes, adding some difficulty above random marks. The bot would also make plays in "high value" lanes, meaning lanes that it already has a mark on, preferrably identifying which lane has the most marks. I expect I'll be able to piggy-back off dirty lanes code for most of this.
  - ~~Table Input~~(Done)
